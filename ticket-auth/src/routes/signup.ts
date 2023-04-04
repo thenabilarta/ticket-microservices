@@ -1,8 +1,9 @@
 import express, { Request, Response } from "express";
-import { body, validationResult } from "express-validator";
-import { RequestValidationError } from "../errors/request-validation-error";
+import { body } from "express-validator";
 import { User } from "../models/user";
-import { BadRequestError } from "../errors/bad-request-error";
+import { BadRequestError, validateRequest } from "@nticket/common";
+
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -15,13 +16,8 @@ router.post(
       .isLength({ min: 4, max: 50 })
       .withMessage("Password must be between 4 or 50 characters"),
   ],
+  validateRequest,
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      throw new RequestValidationError(errors.array());
-    }
-
     const { email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -36,6 +32,20 @@ router.post(
     });
 
     await user.save();
+
+    // Generate JWT
+
+    const userJwt = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_KEY!
+    );
+
+    req.session = {
+      jwt: userJwt,
+    };
 
     res.status(201).send(user);
   }

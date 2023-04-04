@@ -1,11 +1,10 @@
 import express from "express";
+import { currentUser } from "@nticket/common";
 
 const router = express.Router();
 
-router.get("/api/users/currentuser", (req, res) => {
-  res.send({
-    status: 200,
-  });
+router.get("/api/users/currentuser", currentUser, (req, res) => {
+  res.send({ currentUser: req.currentUser || null });
 });
 
 export { router as currentUserRouter };
