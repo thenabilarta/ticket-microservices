@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-order-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-order
+  template:
+    metadata:
+      labels:
+        app: ticket-order
+    spec:
+      containers:
+        - name: ticket-order
+          image: mnabilarta/ticket-order
+          imagePullPolicy: Never
+          env:
+            - name: NATS_CLIENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NATS_URL
+              value: "http://nats-srv:4222"
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+            - name: MONGO_URI
+              value: "mongodb://ticket-order-mongo-srv:27017/ticket-order"
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-order-srv
+spec:
+  selector:
+    app: ticket-order
+  ports:
+    - name: ticket-order
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
